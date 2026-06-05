@@ -1,23 +1,41 @@
 import dotenv from "dotenv";
+dotenv.config();
+
+import http from "http";
+
 import app from "./app.js";
+
 import { connectDB } from "./config/db.js";
 import { initializeSocket } from "./config/socket.js";
 
-dotenv.config();
 import startPostgresListener from "./listeners/postgres.js";
+import startRedisListener from "./listeners/redis.js";
+
+import { publisher, subscriber } from "./config/redis.js";
 
 const PORT = process.env.PORT || 8000;
+
+const server = http.createServer(app);
+
 initializeSocket(server);
+
 const startServer = async () => {
-  await connectDB();
+  try {
+    await connectDB();
 
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
+    await publisher.connect();
+    await subscriber.connect();
 
-  await startPostgresListener();
-  await publisher.connect();
-  await subscriber.connect();
+    await startPostgresListener();
+    await startRedisListener();
+
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
 };
 
 startServer();
