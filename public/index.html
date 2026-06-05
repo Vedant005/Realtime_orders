@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Real-Time Orders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-15px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .event-card {
+        animation: slideIn 0.3s ease-out forwards;
+      }
+
+      pre::-webkit-scrollbar {
+        height: 6px;
+      }
+      pre::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800 font-sans antialiased p-4 md:p-8">
+    <div class="max-w-3xl mx-auto">
+      <header
+        class="mb-8 border-b border-slate-200 pb-5 flex justify-between items-end"
+      >
+        <div>
+          <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Live Orders Events
+          </h1>
+          <p class="text-slate-500 text-sm mt-1">Real-time database updates</p>
+        </div>
+        <div
+          class="flex items-center space-x-2 text-sm text-emerald-600 font-semibold bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100"
+        >
+          <span class="relative flex h-2.5 w-2.5">
+            <span
+              class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+            ></span>
+            <span
+              class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"
+            ></span>
+          </span>
+          <span>Connected</span>
+        </div>
+      </header>
+
+      <div id="events" class="space-y-4"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+      const socket = io("http://localhost:8000");
+      const container = document.getElementById("events");
+
+      const formatTime = (dateString) => {
+        if (!dateString) return "Just now";
+        const date = new Date(dateString);
+        return date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+      };
+
+      const getEventStyles = (eventName) => {
+        switch (eventName) {
+          case "ORDER_CREATED":
+            return {
+              badge: "bg-emerald-100 text-emerald-800 border-emerald-200",
+              icon: "",
+              title: "Order Created",
+            };
+          case "ORDER_UPDATED":
+            return {
+              badge: "bg-blue-100 text-blue-800 border-blue-200",
+              icon: "🔄",
+              title: "Order Updated",
+            };
+          case "ORDER_DELETED":
+            return {
+              badge: "bg-red-100 text-red-800 border-red-200",
+              icon: "🗑️",
+              title: "Order Deleted",
+            };
+          default:
+            return {
+              badge: "bg-gray-100 text-gray-800 border-gray-200",
+              icon: "📦",
+              title: "Unknown Event",
+            };
+        }
+      };
+
+      const appendEvent = (eventName, payload) => {
+        const data = payload.data || {};
+        const styles = getEventStyles(eventName);
+        const time = formatTime(data.updatedAt || data.createdAt);
+
+        const div = document.createElement("div");
+        div.className =
+          "event-card bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow";
+
+        div.innerHTML = `
+        <div class="flex justify-between items-center mb-5">
+          <div class="flex items-center space-x-2">
+        
+            <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border ${styles.badge}">
+              ${styles.title}
+            </span>
+          </div>
+          <span class="text-xs text-slate-400 font-medium">${time}</span>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 rounded-lg p-4 border border-slate-100">
+          <div>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">Customer</p>
+            <p class="text-slate-800 font-medium">${data.customerName || "—"}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">Product</p>
+            <p class="text-slate-800 font-medium">${data.productName || "—"}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">Order ID</p>
+            <p class="text-slate-900 font-mono font-medium">#${data.id || "—"}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">Status</p>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-200 text-slate-700 capitalize">
+              ${data.status || "—"}
+            </span>
+          </div>
+        </div>
+        
+        <details class="mt-4 group text-sm">
+          <summary class="text-slate-400 font-medium cursor-pointer hover:text-indigo-500 transition-colors outline-none select-none">
+             Payload
+          </summary>
+          <div class="mt-2 bg-slate-900 rounded-lg p-4 overflow-x-auto">
+            <pre class="text-xs text-emerald-400 font-mono leading-relaxed"><code>${JSON.stringify(payload, null, 2)}</code></pre>
+          </div>
+        </details>
+      `;
+
+        container.prepend(div);
+      };
+
+      socket.on("ORDER_CREATED", (payload) =>
+        appendEvent("ORDER_CREATED", payload),
+      );
+      socket.on("ORDER_UPDATED", (payload) =>
+        appendEvent("ORDER_UPDATED", payload),
+      );
+      socket.on("ORDER_DELETED", (payload) =>
+        appendEvent("ORDER_DELETED", payload),
+      );
+    </script>
+  </body>
+</html>
