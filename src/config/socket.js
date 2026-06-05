@@ -1,8 +1,8 @@
+import { Server } from "socket.io";
+
 let io;
 
 const initializeSocket = (server) => {
-  const { Server } = require("socket.io");
-
   io = new Server(server, {
     cors: {
       origin: "*",
