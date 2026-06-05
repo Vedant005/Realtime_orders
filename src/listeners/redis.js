@@ -1,6 +1,6 @@
-import { subscriber } from "../config/redis";
+import { subscriber } from "../config/redis.js";
 
-import { getIO } from "../config/socket";
+import { getIO } from "../config/socket.js";
 
 const startRedisListener = async () => {
   await subscriber.subscribe("orders-events", (message) => {
@@ -10,7 +10,7 @@ const startRedisListener = async () => {
 
     console.log("Redis Event:", payload.eventType);
 
-    io.emit("order_update", payload);
+    io.emit(payload.eventType, payload);
   });
 
   console.log("Redis listener started");
