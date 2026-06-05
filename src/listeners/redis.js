@@ -1,6 +1,6 @@
-const { subscriber } = require("../config/redis");
+import { subscriber } from "../config/redis";
 
-const { getIO } = require("../sockets/socket");
+import { getIO } from "../config/socket";
 
 const startRedisListener = async () => {
   await subscriber.subscribe("orders-events", (message) => {
@@ -16,4 +16,4 @@ const startRedisListener = async () => {
   console.log("Redis listener started");
 };
 
-module.exports = startRedisListener;
+export default startRedisListener;
