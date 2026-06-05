@@ -6,10 +6,9 @@ const startPostgresListener = async () => {
 
   await pgClient.query("LISTEN orders_channel");
 
-  await publisher.publish("orders-events", msg.payload);
-
   pgClient.on("notification", async (msg) => {
     console.log("Notification received:", msg.payload);
+    await publisher.publish("orders-events", msg.payload);
   });
 };
 
