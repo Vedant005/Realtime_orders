@@ -16,4 +16,7 @@ app.get("/health", (req, res) => {
     status: "healthy",
   });
 });
+
+app.use(express.static("public"));
+
 export default app;
